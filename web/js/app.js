@@ -1,6 +1,6 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
-import {BehaviorSubject, fromEvent} from "https://esm.sh/rxjs";
+import {BehaviorSubject, fromEvent, of, switchAll} from "https://esm.sh/rxjs";
 import {Torch} from "./torch.js";
 
 export class AppState {
@@ -51,6 +51,9 @@ export class App {
     torches = [];
 
     selectedTorch$ = new BehaviorSubject(null);
+
+    selectedIllumination$ = new BehaviorSubject(of(null));
+
     appState$ = new BehaviorSubject(AppState.RUNNING);
     illumination$ = new BehaviorSubject(new Illumination(true, 0));
 
@@ -89,13 +92,13 @@ export class App {
             });
         fromEvent(this.element.querySelector("#discard-torch"), "click")
             .subscribe(() => {
-                if(this.selectedTorch$.getValue()) {
+                if (this.selectedTorch$.getValue()) {
                     this.removeTorch(this.selectedTorch$.getValue());
                 }
             });
         fromEvent(this.element.querySelector("#recharge-torch"), "click")
             .subscribe(() => {
-                if(this.selectedTorch$.getValue()) {
+                if (this.selectedTorch$.getValue()) {
                     this.selectedTorch$.getValue().recharge();
                 }
             });
@@ -119,10 +122,26 @@ export class App {
         this.selectedTorch$.subscribe(torch => {
             if (torch) {
                 this.element.querySelector("#panel-container").classList.add("open");
+                this.selectedIllumination$.next(torch.state$);
             } else {
                 this.element.querySelector("#panel-container").classList.remove("open");
+                this.selectedIllumination$.next(of(null));
             }
         })
+
+        this.selectedIllumination$
+            .pipe(
+                switchAll()
+            )
+            .subscribe(illumination => {
+                console.log("Selected illumination", illumination);
+
+                if(illumination) {
+                    this.element.querySelector("#time-remaining").textContent = illumination.getTimeDisplay();
+                } else {
+                    this.element.querySelector("#time-remaining").textContent = "No selection";
+                }
+            })
     }
 
     addTorch() {
@@ -144,7 +163,7 @@ export class App {
      * @param {Torch} torch
      */
     removeTorch(torch) {
-        if(this.selectedTorch$.getValue() == torch) {
+        if (this.selectedTorch$.getValue() == torch) {
             this.selectedTorch$.next(null);
         }
         torch.appSubscription.unsubscribe();

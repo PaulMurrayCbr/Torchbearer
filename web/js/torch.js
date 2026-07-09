@@ -5,9 +5,23 @@ import {BehaviorSubject, Subject, takeUntil} from "https://esm.sh/rxjs";
 import {App} from "./app.js";
 
 export class TorchState {
-    constructor(ignited, remainingPercent) {
+    constructor(ignited, maxMinutes, minutesUsed) {
+        this.maxMinutes = maxMinutes;
+        this.minutesUsed = minutesUsed;
         this.ignited = ignited;
-        this.remainingPercent = remainingPercent;
+        this.remainingPercent =  (this.maxMinutes - this.minutesUsed) / this.maxMinutes * 100;
+    }
+
+    getTimeDisplay() {
+        const remaining = this.maxMinutes - this.minutesUsed;
+
+        const blocks = Math.floor( (remaining+7.25)/15  );
+
+        if(blocks <= 0) {
+            return "Almost done";
+        }
+
+        return `About ${blocks*15} minutes remaining`;
     }
 }
 
@@ -15,7 +29,16 @@ export class Torch {
 
     destroy$ = new Subject();
 
-    state$ = new BehaviorSubject(new TorchState(true, 30));
+    state$ = new BehaviorSubject(new TorchState(true, 60, 8));
+
+    /** @type {Date} */
+    ignitedAt = new Date();
+    /**
+     * The number of ms used when the torch was last ignited or extinguished
+     * @type {number}
+     */
+    msUsed = 0;
+
 
     /**
      * @param {App} app
@@ -36,7 +59,14 @@ export class Torch {
 
         this.element.addEventListener("pointerup", e => {
             const prev = this.state$.getValue();
-            const current = new TorchState(!prev.ignited, prev.remainingPercent);
+            const current = new TorchState(!prev.ignited, prev.maxMinutes, prev.minutesUsed);
+
+            if(current.ignited) {
+                this.ignitedAt = new Date();
+            }
+            else {
+                this.ignitedAt = null;
+            }
 
             this.state$.next(current);
         });
@@ -70,9 +100,25 @@ export class Torch {
 
     recharge() {
         const prev = this.state$.getValue();
-        const current = new TorchState(prev.ignited, 100);
+        const current = new TorchState(prev.ignited, prev.maxMinutes, 0);
         this.state$.next(current);
     }
+
+    tick() {
+        const state = this.state$.getValue();
+        if(!state.ignited || this.app.appState$.value().isRunning()) {
+            return
+        }
+
+        // TODO this bit was ai generated, need to recheck tomorrow.
+
+        const now = new Date();
+        const elapsed = now - this.ignitedAt;
+        const minutes = Math.floor(elapsed / 60000);
+        const remaining = state.maxMinutes - minutes;
+        const remainingPercent = remaining / state.maxMinutes * 100;
+    }
+
 
     /**
      * @param {TorchState} state
