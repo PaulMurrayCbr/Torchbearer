@@ -1,3 +1,5 @@
+/* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
+
 *, *::before, *::after {
     box-sizing: border-box;
 }
@@ -52,6 +54,10 @@ body {
     border: thin solid var(--yellow);
     background-color: #0f0f0f;
     color: var(--gray);
+}
+
+#toolbar #buttons button.on {
+    background-color: var(--yellow);
 }
 
 button {
