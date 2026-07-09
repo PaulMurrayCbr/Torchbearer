@@ -1,6 +1,7 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
 import {BehaviorSubject, fromEvent} from "https://esm.sh/rxjs";
+import {Torch} from "./torch.js";
 
 export class AppState {
 
@@ -8,7 +9,7 @@ export class AppState {
     static RUNNING = new AppState("RUNNING");
 
     /**
-     * @param name string
+     * @param {string} name
      */
     constructor(name) {
         this.name = name;
@@ -32,7 +33,26 @@ export class AppState {
 
 }
 
+export class Illumination {
+    /**
+     * @param {boolean} dark
+     * @param {number} percent
+     */
+    constructor(dark, percent) {
+        this.dark = dark;
+        this.percent = percent;
+    }
+}
+
 export class App {
+    /**
+     * @type {[Torch]}
+     */
+    torches = [];
+
+    selectedTorch$ = new BehaviorSubject(null);
+    appState$ = new BehaviorSubject(AppState.RUNNING);
+    illumination$ = new BehaviorSubject(new Illumination(true, 0));
 
     /**
      * @param {HTMLElement} element
@@ -40,10 +60,6 @@ export class App {
 
     constructor(element) {
         this.element = element;
-
-        this.appState$ = new BehaviorSubject(AppState.RUNNING);
-
-        this.selectedTorch$ = new BehaviorSubject(null);
 
         this.appState$.subscribe(state => {
             if (state.isPaused()) {
@@ -55,9 +71,8 @@ export class App {
                 this.element.querySelector("#paused").classList.add("hidden");
             }
         })
-    }
 
-    zz = false;
+    }
 
     start() {
         fromEvent(this.element.querySelector("#pause"), "click")
@@ -68,23 +83,82 @@ export class App {
             .subscribe(() => {
                 this.addTorch();
             });
+        fromEvent(this.element.querySelector("#close-panel"), "click")
+            .subscribe(() => {
+                this.selectTorch(null);
+            });
 
-        fromEvent(this.element.querySelector("#torches-grid"), "click")
-        .subscribe(event => {
-            this.zz = !this.zz;
-            console.log("zz")
+        this.checkTorchState();
 
+        this.illumination$.subscribe(illumination => {
+            if (illumination.dark) {
+                this.element.querySelector("#darkness").classList.add("visible");
+            } else {
+                this.element.querySelector("#darkness").classList.remove("visible");
+            }
 
-//            const target = event.target;
- //           if (target.tagName === "IMG") {
-  //              this.selectedTorch$.next(target);
-    //        }
+            document.documentElement.style.setProperty(
+                "--brightness",
+                Math.trunc(20 + illumination.percent * .6).toString()
+            );
+
         });
 
+        this.selectedTorch$.subscribe(torch => {
+            if (torch) {
+                this.element.querySelector("#panel-container").classList.add("open");
+            } else {
+                this.element.querySelector("#panel-container").classList.remove("open");
+            }
+        })
     }
 
     addTorch() {
-        console.log("Adding torch");
+        const template = document.getElementById("torch-template");
+        const clone = template.content.cloneNode(true);
+        const element = clone.firstElementChild;
+        document.getElementById("torches-grid").appendChild(element);
+        const torch = new Torch(this, element);
+        this.torches.push(torch);
+        torch.start();
+
+        // I'll just jam this subscription into the torch object
+        torch.appSubscription = torch.state$.subscribe(state => {
+            this.checkTorchState();
+        })
     }
 
+    /**
+     * @param {Torch} torch
+     */
+    removeTorch(torch) {
+        torch.appSubscription.unsubscribe();
+        torch.stop();
+        torch.element.remove();
+        this.torches = this.torches.filter(t => t !== torch);
+        this.checkTorchState();
+    }
+
+    /**
+     * @param {Torch} torch
+     */
+    selectTorch(torch) {
+        this.selectedTorch$.next(torch);
+    }
+
+    checkTorchState() {
+        /** @type {TorchState[]} */
+        const state = this.torches.map(torch => torch.state$.getValue());
+
+        let dark = true;
+        let remainingPercent = 0;
+        for (const i of state) {
+            if (i.ignited && i.remainingPercent > 0) {
+                dark = false;
+                remainingPercent = Math.max(remainingPercent, i.remainingPercent);
+            }
+        }
+
+        this.illumination$.next(new Illumination(dark, remainingPercent));
+    }
 }

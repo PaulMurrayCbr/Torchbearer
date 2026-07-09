@@ -8,6 +8,8 @@
     --yellow: #f0a500;
     --gray: #a0a0a0;
     --dark: #606060;
+    /** brightness goes from 80 to 20 */
+    --brightness: 20;
 }
 
 
@@ -16,15 +18,12 @@ body {
     margin: 0;
     height: 100%;
 
-    /** brightness goes from 80 to 20 */
-    --brightness: 20;
 
-    background:
-            rgb(var(--brightness)
-            var(--brightness)
-            var(--brightness));
+    background: rgb(var(--brightness) var(--brightness) var(--brightness));
+    transition: background 1s ease;
 
- /*   transition: background 2s linear; */
+
+    /*   transition: background 2s linear; */
 
     font-family: Arial, Helvetica, sans-serif;
 }
@@ -71,14 +70,13 @@ button {
 }
 
 
-
 #app {
     display: grid;
     grid-template-rows:
         auto    /* toolbar */
         minmax(0, 1fr) /* torch area */
         auto
-        auto;   /* control panel */
+        auto; /* control panel */
 
     height: 100dvh;
 }
@@ -160,7 +158,7 @@ button {
 
     z-index: 10;
 
-    background: var( --gray);
+    background: var(--gray);
     opacity: 0.5;
 
     pointer-events: auto;
@@ -180,7 +178,7 @@ button {
     font-weight: bold;
     letter-spacing: 0.2em;
 
-    color: rgba(255,255,255,0.7);
+    color: rgba(255, 255, 255, 0.7);
 
     pointer-events: none;
 
@@ -208,8 +206,21 @@ button {
     border-radius: .5rem;
 }
 
+#panel-container {
+    height: auto;
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    transition: max-height 1s ease-in-out;
+}
+
+#panel-container.open {
+    max-height: 50dvh;
+}
+
 #panel {
-    display:block;
+    display: block;
     position: relative;
 
     overflow: hidden;
@@ -227,7 +238,7 @@ button {
     margin-bottom: .5rem;
 }
 
-#panel #time-remaining{
+#panel #time-remaining {
     font-size: 1rem;
     margin-bottom: .5rem;
 }
@@ -238,11 +249,7 @@ button {
     width: 100%;
     background: transparent;
     color: var(--yellow);
-    border:thin solid var(--yellow);
-}
-
-#panel.open {
-    border: thin solid magenta;
+    border: thin solid var(--yellow);
 }
 
 .close-button {
@@ -265,8 +272,10 @@ button {
 
     cursor: pointer;
 
-    border:thin solid var(--yellow);
+    border: thin solid var(--yellow);
 }
 
 
-.hidden { display: none;}
+.hidden {
+    display: none;
+}

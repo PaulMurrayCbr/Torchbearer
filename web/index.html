@@ -15,12 +15,11 @@
 
 <template id="torch-template">
     <div class="torch-container">
-        <img class="torch0" src="images/torch0.png" alt="torch">
-        <img class="torch1" src="images/torch1.png" alt="torch">
-        <img class="torch2" src="images/torch2.png" alt="torch">
-        <img class="torch3" src="images/torch3.png" alt="torch">
+        <img alt="torch" class="torch0" src="images/torch0.png">
+        <img alt="torch" class="torch1" src="images/torch1.png">
+        <img alt="torch" class="torch2" src="images/torch2.png">
+        <img alt="torch" class="torch3" src="images/torch3.png">
     </div>
-
 </template>
 
 <div id="app">
@@ -33,33 +32,28 @@
     </header>
 
     <main id="torches">
-        <div id="darkness" class="">DARKNESS</div>
-        <div id="paused" class="hidden"></div>
+        <div class="visible" id="darkness">DARKNESS</div>
+        <div class="hidden" id="paused"></div>
 
         <div id="torches-grid">
-            <div class="torch-container">
-                <img class="torch0" src="images/torch0.png" alt="torch">
-                <img class="torch1" src="images/torch1.png" alt="torch">
-                <img class="torch2" src="images/torch2.png" alt="torch">
-                <img class="torch3" src="images/torch3.png" alt="torch">
-            </div>
-
         </div>
     </main>
 
-    <nav id="help" >
-                Click torch to ignite/extinguish.<br>
-        Long or double click for options.
+    <nav id="help">
+        Tap torch to ignite/extinguish.<br>
+        Swipe torch for options.
     </nav>
 
-    <footer id="panel" class="dialog">
-        <span class="title">Torch Options</span>
-        <span class="close-button dialog">×</span>
-        <div id="time-remaining">About 15 min remaining</div>
-        <button id="discard-torch">✕ Discard</button>
-        <button id="recharge-torch">↻ Recharge</button>
-        <button id="edit-time">⏱ Edit time</button>
+    <footer id="panel-container" class="">
+        <div class="dialog" id="panel">
+            <span class="title">Torch Options</span>
+            <span id="close-panel" class="close-button dialog">×</span>
+            <div id="time-remaining">About 15 min remaining</div>
+            <button id="discard-torch">✕ Discard</button>
+            <button id="recharge-torch">↻ Recharge</button>
+            <button id="edit-time">⏱ Edit time</button>
 
+        </div>
     </footer>
 </div>
 
