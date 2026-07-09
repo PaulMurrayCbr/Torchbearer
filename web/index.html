@@ -13,6 +13,16 @@
 </head>
 <body>
 
+<template id="torch-template">
+    <div class="torch-container">
+        <img class="torch0" src="images/torch0.png" alt="torch">
+        <img class="torch1" src="images/torch1.png" alt="torch">
+        <img class="torch2" src="images/torch2.png" alt="torch">
+        <img class="torch3" src="images/torch3.png" alt="torch">
+    </div>
+
+</template>
+
 <div id="app">
     <header id="toolbar">
         <span id="title">Torchbearer</span>
@@ -23,16 +33,17 @@
     </header>
 
     <main id="torches">
-        <div id="darkness" class="visible">DARKNESS</div>
+        <div id="darkness" class="">DARKNESS</div>
         <div id="paused" class="hidden"></div>
 
         <div id="torches-grid">
-                    <img class="torch" src="images/torch0.png" alt="torch">
-            <!--
-                    <img class="torch selected" src="images/torch1.png" alt="torch">
-                    <img class="torch" src="images/torch2.png" alt="torch">
-                    <img class="torch" src="images/torch3.png" alt="torch">
-                    -->
+            <div class="torch-container">
+                <img class="torch0" src="images/torch0.png" alt="torch">
+                <img class="torch1" src="images/torch1.png" alt="torch">
+                <img class="torch2" src="images/torch2.png" alt="torch">
+                <img class="torch3" src="images/torch3.png" alt="torch">
+            </div>
+
         </div>
     </main>
 
