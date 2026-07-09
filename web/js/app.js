@@ -87,6 +87,18 @@ export class App {
             .subscribe(() => {
                 this.selectTorch(null);
             });
+        fromEvent(this.element.querySelector("#discard-torch"), "click")
+            .subscribe(() => {
+                if(this.selectedTorch$.getValue()) {
+                    this.removeTorch(this.selectedTorch$.getValue());
+                }
+            });
+        fromEvent(this.element.querySelector("#recharge-torch"), "click")
+            .subscribe(() => {
+                if(this.selectedTorch$.getValue()) {
+                    this.selectedTorch$.getValue().recharge();
+                }
+            });
 
         this.checkTorchState();
 
@@ -132,6 +144,9 @@ export class App {
      * @param {Torch} torch
      */
     removeTorch(torch) {
+        if(this.selectedTorch$.getValue() == torch) {
+            this.selectedTorch$.next(null);
+        }
         torch.appSubscription.unsubscribe();
         torch.stop();
         torch.element.remove();

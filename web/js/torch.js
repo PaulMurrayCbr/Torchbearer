@@ -15,7 +15,7 @@ export class Torch {
 
     destroy$ = new Subject();
 
-    state$ = new BehaviorSubject(new TorchState(true, 100));
+    state$ = new BehaviorSubject(new TorchState(true, 30));
 
     /**
      * @param {App} app
@@ -66,6 +66,12 @@ export class Torch {
         this.state$.complete();
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    recharge() {
+        const prev = this.state$.getValue();
+        const current = new TorchState(prev.ignited, 100);
+        this.state$.next(current);
     }
 
     /**
