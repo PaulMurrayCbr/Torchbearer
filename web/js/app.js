@@ -48,12 +48,16 @@ export class App {
         this.appState$.subscribe(state => {
             if (state.isPaused()) {
                 this.element.querySelector("#pause").classList.add("on");
+                this.element.querySelector("#paused").classList.remove("hidden");
                 this.selectedTorch$.next(null);
             } else {
                 this.element.querySelector("#pause").classList.remove("on");
+                this.element.querySelector("#paused").classList.add("hidden");
             }
         })
     }
+
+    zz = false;
 
     start() {
         fromEvent(this.element.querySelector("#pause"), "click")
@@ -64,6 +68,18 @@ export class App {
             .subscribe(() => {
                 this.addTorch();
             });
+
+        fromEvent(this.element.querySelector("#torches-grid"), "click")
+        .subscribe(event => {
+            this.zz = !this.zz;
+            console.log("zz")
+
+
+//            const target = event.target;
+ //           if (target.tagName === "IMG") {
+  //              this.selectedTorch$.next(target);
+    //        }
+        });
 
     }
 

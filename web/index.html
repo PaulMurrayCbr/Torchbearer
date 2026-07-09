@@ -24,12 +24,16 @@
 
     <main id="torches">
         <div id="darkness" class="visible">DARKNESS</div>
-<!--
-        <img class="torch" src="images/torch0.png" alt="torch">
-        <img class="torch selected" src="images/torch1.png" alt="torch">
-        <img class="torch" src="images/torch2.png" alt="torch">
-        <img class="torch" src="images/torch3.png" alt="torch">
-        -->
+        <div id="paused" class="hidden"></div>
+
+        <div id="torches-grid">
+                    <img class="torch" src="images/torch0.png" alt="torch">
+            <!--
+                    <img class="torch selected" src="images/torch1.png" alt="torch">
+                    <img class="torch" src="images/torch2.png" alt="torch">
+                    <img class="torch" src="images/torch3.png" alt="torch">
+                    -->
+        </div>
     </main>
 
     <nav id="help" >
@@ -38,12 +42,14 @@
     </nav>
 
     <footer id="panel" class="dialog">
-
-        here is a panel
+        <span class="title">Torch Options</span>
+        <span class="close-button dialog">×</span>
+        <div id="time-remaining">About 15 min remaining</div>
+        <button id="discard-torch">✕ Discard</button>
+        <button id="recharge-torch">↻ Recharge</button>
+        <button id="edit-time">⏱ Edit time</button>
 
     </footer>
-
-
 </div>
 
 <script src="js/main.js" type="module"></script>
