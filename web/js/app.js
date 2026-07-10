@@ -63,6 +63,8 @@ export class App {
     timePasses$ = new Subject();
     timeMark = new Date();
 
+    timeMenuOpen = false
+
     /**
      * @param {HTMLElement} element
      */
@@ -109,12 +111,33 @@ export class App {
                 }
             });
 
+        fromEvent(this.element.querySelector("#time-passes"), "click")
+            .subscribe(() => {
+                this.timeMenuOpen = !this.timeMenuOpen;
+                if(this.timeMenuOpen) {
+                    this.element.querySelector("#time-passes").classList.add("on");
+                    this.element.querySelector("#time-passes-container").classList.add("open");
+                } else {
+                    this.element.querySelector("#time-passes").classList.remove("on");
+                    this.element.querySelector("#time-passes-container").classList.remove("open");
+                }
+            });
+
         this.element.querySelectorAll(".set-minutes").forEach(button => {
             fromEvent(button, "click").subscribe(() => {
                 if (this.selectedTorch$.getValue()) {
                     const min = Number(button.dataset.min);
                     this.selectedTorch$.getValue().setMaxMinutes(min);
                 }
+            });
+        });
+
+
+        this.element.querySelectorAll(".minutes-pass").forEach(button => {
+            fromEvent(button, "click").subscribe(() => {
+                const min = Number(button.dataset.min);
+                this.markTime();
+                this.timePasses$.next(min);
             });
         });
 

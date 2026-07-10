@@ -59,6 +59,10 @@ body {
     background-color: var(--yellow);
 }
 
+#time-passes-dropdown {
+    width: 9rem;
+}
+
 button {
     font-size: 1.4rem;
 
@@ -291,4 +295,55 @@ button {
 
 .hidden {
     display: none;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown .title {
+    color: var(--yellow);
+    font-size: 1rem;
+}
+
+
+.dropdown-menu {
+    display: none;
+
+    position: absolute;
+    right: 0;
+    top: 100%;
+    width:auto;
+    background-color: #0f0f0f;
+
+    border-radius: .5rem;
+    cursor: pointer;
+    border: thin solid var(--yellow);
+    padding: 0.5rem;
+
+    z-index: 10;
+}
+
+.dropdown.open .dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+}
+
+.dropdown.open .dropdown-menu button{
+    display: flex;
+    flex-direction: column;
+    font-size: 1rem;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    padding: 0.5rem 1rem;
+
+    border: none;
+    background: transparent;
+
+    text-align: center;
+
 }
