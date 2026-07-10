@@ -255,6 +255,16 @@ button {
     width: 100%;
 }
 
+#panel #minute-button-container {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#panel #minute-button-container button {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
 .close-button {
     position: absolute;
     top: 0.5rem;
