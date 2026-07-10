@@ -246,10 +246,13 @@ button {
 #panel button {
     font-size: 1rem;
     margin-bottom: .5rem;
-    width: 100%;
     background: transparent;
     color: var(--yellow);
     border: thin solid var(--yellow);
+}
+
+#panel > button {
+    width: 100%;
 }
 
 .close-button {

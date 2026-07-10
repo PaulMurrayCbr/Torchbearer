@@ -110,7 +110,7 @@ export class Torch {
         this.update();
     }
 
-    resetMax(minutes) {
+    setMaxMinutes(minutes) {
         this.maxMinutes = minutes;
         this.update();
     }

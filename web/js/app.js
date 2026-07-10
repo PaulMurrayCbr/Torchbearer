@@ -40,6 +40,8 @@ export class Illumination {
      */
     constructor(dark, percent) {
         this.dark = dark;
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
         this.percent = percent;
     }
 }
@@ -106,6 +108,15 @@ export class App {
                     this.selectedTorch$.getValue().recharge();
                 }
             });
+
+        this.element.querySelectorAll(".set-minutes").forEach(button => {
+            fromEvent(button, "click").subscribe(() => {
+                if (this.selectedTorch$.getValue()) {
+                    const min = Number(button.dataset.min);
+                    this.selectedTorch$.getValue().setMaxMinutes(min);
+                }
+            });
+        });
 
         this.checkTorchState();
 
@@ -209,7 +220,7 @@ export class App {
 
     markTime() {
         const now = new Date();
-        if(this.appState.isRunning()) {
+        if (this.appState.isRunning()) {
             const diff = now.getTime() - this.timeMark.getTime();
             this.timePasses$.next(diff / 1000 / 60); // minutes
         }
