@@ -5,23 +5,25 @@ import {BehaviorSubject, Subject, takeUntil} from "https://esm.sh/rxjs";
 import {App} from "./app.js";
 
 export class TorchState {
-    constructor(ignited, maxMinutes, minutesUsed) {
+    constructor(ignited, maxMinutes, minutesRemaining) {
         this.maxMinutes = maxMinutes;
-        this.minutesUsed = minutesUsed;
+        this.minutesRemaining = minutesRemaining;
         this.ignited = ignited;
-        this.remainingPercent =  (this.maxMinutes - this.minutesUsed) / this.maxMinutes * 100;
+        this.remainingPercent = this.minutesRemaining / this.maxMinutes * 100;
     }
 
     getTimeDisplay() {
-        const remaining = this.maxMinutes - this.minutesUsed;
-
-        const blocks = Math.floor( (remaining+7.25)/15  );
-
-        if(blocks <= 0) {
-            return "Almost done";
+        if (this.minutesRemaining <= 0) {
+            return `Torch consumed. Recharge for ${this.maxMinutes} minute${this.maxMinutes>1?'s':''}`;
         }
 
-        return `About ${blocks*15} minutes remaining`;
+        const blocks = Math.floor((this.minutesRemaining + 7.25) / 15);
+
+        if (blocks <= 0) {
+            return `${this.maxMinutes} minute${this.maxMinutes>1?'s':''} almost done`;
+        }
+
+        return `About ${blocks * 15} minutes remaining of ${this.maxMinutes}`;
     }
 }
 
@@ -29,16 +31,11 @@ export class Torch {
 
     destroy$ = new Subject();
 
-    state$ = new BehaviorSubject(new TorchState(true, 60, 8));
+    ignited = false;
+    maxMinutes = 1;
+    minutesRemaining = 1;
 
-    /** @type {Date} */
-    ignitedAt = new Date();
-    /**
-     * The number of ms used when the torch was last ignited or extinguished
-     * @type {number}
-     */
-    msUsed = 0;
-
+    state$ = new BehaviorSubject(new TorchState(this.ignited, this.maxMinutes, this.minutesRemaining));
 
     /**
      * @param {App} app
@@ -54,29 +51,25 @@ export class Torch {
         this.torch3 = element.querySelector(".torch3");
     }
 
+    emitState() {
+        this.state$.next(new TorchState(this.ignited, this.maxMinutes, this.minutesRemaining));
+    }
+
     start() {
-        console.log("Starting torch", this.element);
-
         this.element.addEventListener("pointerup", e => {
-            const prev = this.state$.getValue();
-            const current = new TorchState(!prev.ignited, prev.maxMinutes, prev.minutesUsed);
-
-            if(current.ignited) {
-                this.ignitedAt = new Date();
+            if (this.app.selectedTorch$.getValue() != this) {
+                this.app.selectTorch(this);
+            } else {
+                this.ignited = !this.ignited;
+                this.update();
             }
-            else {
-                this.ignitedAt = null;
-            }
-
-            this.state$.next(current);
         });
+
         this.element.addEventListener("pointermove", e => {
-            this.app.selectTorch(this);
+            if (this.app.selectedTorch$.getValue() != this) {
+                this.app.selectTorch(this);
+            }
         });
-
-        this.state$.subscribe(state => {
-            this.recheckOpacity(state);
-        })
 
         this.app.selectedTorch$
             .pipe(
@@ -90,6 +83,20 @@ export class Torch {
                 }
             });
 
+        this.app.timePasses$.pipe(takeUntil(this.destroy$)).subscribe(minutes => {
+            if (this.ignited) {
+                this.minutesRemaining -= minutes;
+
+                if(this.minutesRemaining <= 0) {
+                    this.ignited = false;
+                    this.minutesRemaining = 0;
+                }
+
+                this.update();
+            }
+        });
+
+        this.update();
     }
 
     stop() {
@@ -99,49 +106,38 @@ export class Torch {
     }
 
     recharge() {
-        const prev = this.state$.getValue();
-        const current = new TorchState(prev.ignited, prev.maxMinutes, 0);
-        this.state$.next(current);
+        this.minutesRemaining = this.maxMinutes;
+        this.update();
     }
 
-    tick() {
-        const state = this.state$.getValue();
-        if(!state.ignited || this.app.appState$.value().isRunning()) {
-            return
-        }
-
-        // TODO this bit was ai generated, need to recheck tomorrow.
-
-        const now = new Date();
-        const elapsed = now - this.ignitedAt;
-        const minutes = Math.floor(elapsed / 60000);
-        const remaining = state.maxMinutes - minutes;
-        const remainingPercent = remaining / state.maxMinutes * 100;
+    resetMax(minutes) {
+        this.maxMinutes = minutes;
+        this.update();
     }
 
+    update() {
+        this.recheckOpacity();
+        this.emitState()
+    }
 
-    /**
-     * @param {TorchState} state
-     */
-    recheckOpacity(state) {
-        console.log("Rechecking opacity", state);
+    recheckOpacity() {
+        const remainingPercent = (this.minutesRemaining / this.maxMinutes) * 100;
 
-
-        if (state.ignited && state.remainingPercent > 0) {
+        if (this.ignited && remainingPercent > 0) {
             this.torch0.style.opacity = 0;
             this.torch1.style.opacity = 0;
             this.torch2.style.opacity = 0;
             this.torch3.style.opacity = 0;
 
-            if (state.remainingPercent > 50) {
+            if (remainingPercent > 50) {
                 this.torch2.style.opacity = 1;
-                this.torch3.style.opacity = (state.remainingPercent - 50) / 50;
-            } else if (state.remainingPercent > 25) {
+                this.torch3.style.opacity = (remainingPercent - 50) / 50;
+            } else if (remainingPercent > 25) {
                 this.torch1.style.opacity = 1;
-                this.torch2.style.opacity = (state.remainingPercent - 25) / 25;
+                this.torch2.style.opacity = (remainingPercent - 25) / 25;
             } else {
                 this.torch0.style.opacity = 1;
-                this.torch1.style.opacity = state.remainingPercent / 25;
+                this.torch1.style.opacity = remainingPercent / 25;
             }
         } else {
             this.torch0.style.opacity = 1;

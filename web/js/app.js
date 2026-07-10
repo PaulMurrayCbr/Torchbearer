@@ -1,6 +1,6 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
-import {BehaviorSubject, fromEvent, of, switchAll} from "https://esm.sh/rxjs";
+import {BehaviorSubject, fromEvent, of, Subject, switchAll} from "https://esm.sh/rxjs";
 import {Torch} from "./torch.js";
 
 export class AppState {
@@ -54,8 +54,12 @@ export class App {
 
     selectedIllumination$ = new BehaviorSubject(of(null));
 
-    appState$ = new BehaviorSubject(AppState.RUNNING);
+    appState = AppState.RUNNING;
+    appState$ = new BehaviorSubject(this.appState);
     illumination$ = new BehaviorSubject(new Illumination(true, 0));
+
+    timePasses$ = new Subject();
+    timeMark = new Date();
 
     /**
      * @param {HTMLElement} element
@@ -63,24 +67,24 @@ export class App {
 
     constructor(element) {
         this.element = element;
-
-        this.appState$.subscribe(state => {
-            if (state.isPaused()) {
-                this.element.querySelector("#pause").classList.add("on");
-                this.element.querySelector("#paused").classList.remove("hidden");
-                this.selectedTorch$.next(null);
-            } else {
-                this.element.querySelector("#pause").classList.remove("on");
-                this.element.querySelector("#paused").classList.add("hidden");
-            }
-        })
-
     }
 
     start() {
         fromEvent(this.element.querySelector("#pause"), "click")
             .subscribe(() => {
-                this.appState$.next(this.appState$.getValue().toggle());
+                this.markTime();
+                this.appState = this.appState.toggle();
+
+                if (this.appState.isPaused()) {
+                    this.element.querySelector("#pause").classList.add("on");
+                    this.element.querySelector("#paused").classList.remove("hidden");
+                    this.selectedTorch$.next(null);
+                } else {
+                    this.element.querySelector("#pause").classList.remove("on");
+                    this.element.querySelector("#paused").classList.add("hidden");
+                }
+
+                this.appState$.next(this.appState);
             });
         fromEvent(this.element.querySelector("#addTorch"), "click")
             .subscribe(() => {
@@ -136,12 +140,18 @@ export class App {
             .subscribe(illumination => {
                 console.log("Selected illumination", illumination);
 
-                if(illumination) {
+                if (illumination) {
                     this.element.querySelector("#time-remaining").textContent = illumination.getTimeDisplay();
                 } else {
+                    // this almost never happens
                     this.element.querySelector("#time-remaining").textContent = "No selection";
                 }
             })
+
+        const timer = setInterval(() => {
+            this.markTime();
+        }, 10000);
+
     }
 
     addTorch() {
@@ -151,6 +161,7 @@ export class App {
         document.getElementById("torches-grid").appendChild(element);
         const torch = new Torch(this, element);
         this.torches.push(torch);
+        this.markTime();
         torch.start();
 
         // I'll just jam this subscription into the torch object
@@ -194,5 +205,14 @@ export class App {
         }
 
         this.illumination$.next(new Illumination(dark, remainingPercent));
+    }
+
+    markTime() {
+        const now = new Date();
+        if(this.appState.isRunning()) {
+            const diff = now.getTime() - this.timeMark.getTime();
+            this.timePasses$.next(diff / 1000 / 60); // minutes
+        }
+        this.timeMark = now;
     }
 }
