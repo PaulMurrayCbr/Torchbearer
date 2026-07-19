@@ -1,8 +1,9 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
-import {BehaviorSubject, bufferWhen, fromEvent, Subject, switchAll, takeUntil, tap, timer} from "https://esm.sh/rxjs";
+import {BehaviorSubject, Subject, takeUntil} from "https://esm.sh/rxjs";
 
 import {App} from "./app.js";
+import {clickListener$, LONG} from "./clicklistener.js";
 
 export class TorchState {
     constructor(ignited, maxMinutes, minutesRemaining) {
@@ -68,19 +69,12 @@ export class Torch {
     }
 
     start() {
-
-        const multiclick$ = new Subject();
-
-        fromEvent(this.element, "click")
+        clickListener$(this.element)
             .pipe(
                 takeUntil(this.destroy$),
-                tap(() => multiclick$.next(timer(300))),
-                bufferWhen(() => multiclick$.pipe(switchAll())),
             )
-            .subscribe(
-                /** @param {MouseEvent[]} clicks */
-                (clicks) => {
-                    if (clicks.length === 1) {
+            .subscribe(clicks => {
+                    if (clicks.length > 1 || clicks[0] === LONG) {
                         if (this.ignited) {
                             this.extinguish();
                         } else {
@@ -97,7 +91,8 @@ export class Torch {
                             this.app.selectTorch(null);
                         }
                     }
-                })
+                }
+            )
 
         this.app.selectedTorch$
             .pipe(

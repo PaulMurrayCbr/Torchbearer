@@ -128,7 +128,7 @@ export class App {
                 const torch = this.selectedTorch$.getValue();
                 if (torch && !torch.ignited && torch.minutesRemaining > 0) {
                     torch.ignite();
-                    this.toaster.show("You may also tap a torch to ignite or extinguish it.");
+                    this.toaster.show("You may also double or long tap a torch to ignite or extinguish it.");
                 }
             });
 
@@ -138,7 +138,7 @@ export class App {
                 const torch = this.selectedTorch$.getValue();
                 if (torch && torch.ignited) {
                     torch.extinguish();
-                    this.toaster.show("You may also tap a torch to ignite or extinguish it.");
+                    this.toaster.show("You may also double or long tap a torch to ignite or extinguish it.");
                 }
             });
 

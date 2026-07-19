@@ -71,6 +71,8 @@ button {
 
     border-radius: 1rem;
     border: none;
+
+    transition: background .5s ease, opacity .5s ease;
 }
 
 button.disabled {
