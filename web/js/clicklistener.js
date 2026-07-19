@@ -5,26 +5,34 @@ import {
     debounceTime,
     delay,
     filter,
+    finalize,
     fromEvent,
     map,
     merge,
     of,
-    share,
     Subject,
-    switchAll
+    Subscription,
+    switchAll,
+    takeUntil
 } from "https://esm.sh/rxjs";
 
 export const SHORT = 'SHORT', LONG = 'LONG';
 const START = 'START', CANCEL = 'CANCEL';
 
 export function clickListener$(element) {
+    const finalizeMe$ = new Subject();
+
     const click$ = new Subject();
 
     let isDown = false;
-    const down$ = fromEvent(element, "pointerdown");
-    const up$ = fromEvent(element, "pointerup");
+    const down$ = fromEvent(element, "pointerdown").pipe(takeUntil(finalizeMe$));
+    const up$ = fromEvent(element, "pointerup").pipe(takeUntil(finalizeMe$));
 
-    fromEvent(element, "click").subscribe(event => event.cancelable && event.preventDefault());
+    /** @type {Subscription[]} */
+
+    fromEvent(element, "click")
+        .pipe(takeUntil(finalizeMe$))
+        .subscribe(event => event.cancelable && event.preventDefault());
 
     const cancel$ = merge(
         fromEvent(element, "pointerleave"),
@@ -32,10 +40,10 @@ export function clickListener$(element) {
         fromEvent(element, "pointercancel"),
         fromEvent(window, "blur"),
         fromEvent(document, "visibilitychange")
-            .pipe(
-                filter(() => document.hidden)
-            ),
-    ).pipe(share());
+            .pipe(filter(() => document.hidden))
+    ).pipe(
+        takeUntil(finalizeMe$)
+    );
 
     const startLongClick$ = new Subject();
     const endLongClick$ = startLongClick$.pipe(
@@ -46,7 +54,8 @@ export function clickListener$(element) {
                 of(eventType)
         ), // long click interval
         switchAll(),
-        filter(eventType => eventType === START)
+        filter(eventType => eventType === START),
+        takeUntil(finalizeMe$),
     );
 
     down$.subscribe(event => {
@@ -82,7 +91,10 @@ export function clickListener$(element) {
             click$.pipe(
                 debounceTime(250)
             )
-        )
+        ),
+        finalize(() => {
+            finalizeMe$.next();
+        })
     );
 
 }
