@@ -1,6 +1,6 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
-import {BehaviorSubject, fromEvent, of, Subject, switchAll, map, tap, delay, filter} from "https://esm.sh/rxjs";
+import {BehaviorSubject, fromEvent, of, Subject, switchAll, map, delay, filter} from "https://esm.sh/rxjs";
 import {Torch} from "./torch.js";
 import {Toaster} from "./toaster.js";
 
