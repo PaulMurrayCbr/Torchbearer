@@ -81,14 +81,14 @@ export class Torch {
                 /** @param {MouseEvent[]} clicks */
                 (clicks) => {
                     if (clicks.length === 1) {
-                        if(this.minutesRemaining <= 0 && !this.ignited) {
-                            this.app.toaster.show("This torch is spent and cannot be re-lit.");
-                        }
-
-                        this.ignited = !this.ignited;
-                        this.update();
                         if (this.ignited) {
-                            this.app.toaster.show(this.state.getTimeDisplay());
+                            this.extinguish();
+                        } else {
+                            if (this.minutesRemaining <= 0) {
+                                this.app.toaster.show("This torch is spent and cannot be re-lit.");
+                            } else {
+                                this.ignite();
+                            }
                         }
                     } else {
                         if (this.app.selectedTorch$.getValue() !== this) {
@@ -133,10 +133,22 @@ export class Torch {
         this.destroy$.complete();
     }
 
+    ignite() {
+        this.ignited = true;
+        this.update();
+        this.app.toaster.show(this.state.getTimeDisplay());
+
+    }
+
+    extinguish() {
+        this.ignited = false;
+        this.update();
+    }
+
     recharge() {
         this.app.toaster.show("Torch recharged.");
-        if(this.minutesRemaining <= this.maxMinutes &&  this.state.getRemainingBlocks() > 0) {
-            this.app.toaster.show("You have wasted about " + (this.state.getRemainingBlocks()*TorchState.blockMinutes) + " minutes worth of oil.");
+        if (this.minutesRemaining <= this.maxMinutes && this.state.getRemainingBlocks() > 0) {
+            this.app.toaster.show("You have wasted about " + (this.state.getRemainingBlocks() * TorchState.blockMinutes) + " minutes worth of oil.");
         }
         this.minutesRemaining = this.maxMinutes;
         this.update();
@@ -180,5 +192,6 @@ export class Torch {
         }
 
     }
+
 
 }
