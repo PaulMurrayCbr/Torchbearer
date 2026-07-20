@@ -339,7 +339,7 @@ export class App {
         const splashFade = document.getElementById("splash-fade");
         const splashContainer = document.getElementById("splash-container");
 
-        timer(1000).subscribe(() => {
+        timer(500).subscribe(() => {
             splash.style.setProperty("opacity", "0");
             const sub = fromEvent(splash, "transitionend").subscribe(event => {
                 sub.unsubscribe();
@@ -349,7 +349,7 @@ export class App {
             });
         });
 
-        timer(2000).subscribe(() => {
+        timer(1500).subscribe(() => {
             splashFade.style.setProperty("opacity", "0");
             const sub2 = fromEvent(splashFade, "transitionend").subscribe(event => {
                 sub2.unsubscribe();
