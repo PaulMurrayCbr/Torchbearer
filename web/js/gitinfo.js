@@ -1,1 +1,8 @@
-export gitinfo = {"commit":"48ee4c9","hash":"48ee4c990c511dc6d6b23f36b5d366019cc9b720","timestamp":"2026-07-21T14:55:07+10:00","message":"test commit","tag"="v0.0.0-5-g48ee4c9","ref":"HEAD -> main"};
+export const gitinfo = {
+    "commit": "d05876c",
+    "hash": "d05876c2d9f591f82d2a0fb0cbd95bcefdd9d978",
+    "timestamp": "2026-07-21T14:55:22+10:00",
+    "message": "test commit",
+    "tag"= "v0.0.0-6-gd05876c",
+    "ref": "HEAD -> main"
+};
