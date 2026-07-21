@@ -6,10 +6,22 @@
 
 :root {
     --yellow: #f0a500;
+    --disabled-yellow: #8a5f00;
     --gray: #a0a0a0;
     --dark: #606060;
     /** brightness goes from 80 to 20 */
     --brightness: 20;
+
+    /* getting rid of annoying artifacts when clicking */
+    -webkit-user-select: none;
+    user-select: none;
+    outline: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
 }
 
 
@@ -50,34 +62,70 @@ body {
 }
 
 #toolbar #buttons button {
-    border: thin solid var(--yellow);
-    background-color: #0f0f0f;
     color: var(--gray);
+    font-size: 1.4rem;
 }
 
-#toolbar #buttons button.on {
-    background-color: var(--yellow);
+#toolbar #buttons button.minutes-pass {
+    font-size: 1rem;
 }
+
 
 #time-passes-dropdown {
     width: 9rem;
 }
 
+#time-passes-dropdown button {
+    font-size: 1rem;
+}
+
 button {
-    font-size: 1.4rem;
+    font-size: 1rem;
+    margin-bottom: .5rem;
 
     min-width: 2.5rem;
     min-height: 2.5rem;
 
     border-radius: 1rem;
-    border: none;
+    border: thin solid var(--yellow);
+    color: var(--yellow);
 
-    transition: background .5s ease, opacity .5s ease;
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+}
+
+button:focus {
+    outline: none;
+}
+
+button::-moz-focus-inner {
+    border: 0;
+}
+
+button:active {
+    transform: translateY(.125rem);
+
+    transition: transform 100ms ease-out;
+
+    outline: none;
+
+}
+
+button.on {
+    transition: background .25s ease-out;
+    background-color: var(--yellow);
+    color: var(--gray);
 }
 
 button.disabled {
-    background: var(--gray);
-    opacity: 0.5;
+    color: var(--disabled-yellow);
+    border-color: var(--disabled-yellow);
+    cursor: not-allowed;
+}
+
+button.disabled:active {
+/*    transform: none; */
 }
 
 #app {
@@ -300,14 +348,6 @@ button.disabled {
     margin-bottom: .5rem;
 }
 
-#panel button {
-    font-size: 1rem;
-    margin-bottom: .5rem;
-    background: transparent;
-    color: var(--yellow);
-    border: thin solid var(--yellow);
-}
-
 #panel > button {
     width: 100%;
 }
@@ -328,7 +368,6 @@ button.disabled {
     right: 0.5rem;
     z-index: 2;
 
-    background: transparent;
     font-size: 1.5rem;
 
     min-width: 2rem;
@@ -338,11 +377,6 @@ button.disabled {
     align-items: center;
     justify-content: center;
 
-    border-radius: .5rem;
-
-    cursor: pointer;
-
-    border: thin solid var(--yellow);
 }
 
 
@@ -394,10 +428,6 @@ button.disabled {
     width: 100%;
     padding: 0.5rem 1rem;
 
-    border: none;
-    background: transparent;
-
-    text-align: center;
 
 }
 

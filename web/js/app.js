@@ -345,7 +345,6 @@ export class App {
                 sub.unsubscribe();
                 splashContainer.style.setProperty("display", "none");
                 splashContainer.remove();
-
             });
         });
 
