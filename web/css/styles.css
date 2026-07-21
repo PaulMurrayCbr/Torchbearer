@@ -296,6 +296,12 @@ button.disabled:active {
     /*    transform: translateY(-1rem); */
 }
 
+#hint-container > * {
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+
 .help {
     font-size: smaller;
     color: var(--gray);

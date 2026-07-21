@@ -55,7 +55,14 @@
     </header>
 
     <main id="torches">
-        <div class="help fader" id="start-hint">Tap the flame to add a torch.</div>
+        <div id="hint-container">
+            <aside class="help fader" id="start-hint">Tap the flame to add a torch.</aside>
+            <aside class="help fader hidden" id="help">
+                Tap torch to select.<br>
+                Double or long tap to ignite/extinguish.
+            </aside>
+        </div>
+
         <div class="visible" id="darkness">DARKNESS</div>
         <div id="toaster">
         </div>
@@ -63,11 +70,6 @@
         <div id="torches-grid">
         </div>
     </main>
-
-    <nav class="help fader hidden" id="help">
-        Tap torch to select.<br>
-        Double or long tap to ignite/extinguish.
-    </nav>
 
     <footer class="" id="panel-container">
         <div class="dialog" id="panel">
