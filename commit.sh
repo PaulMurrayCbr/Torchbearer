@@ -12,5 +12,5 @@ git commit -m "$MESSAGE"
 TAG=$(git describe --tags --always)
 git log -1 --format='export const gitinfo = {"commit":"%h","hash":"%H","timestamp":"%cI","message":"%s","tag":"'$TAG'","ref":"%D"};' > web/js/gitinfo.js
 git log -1 --oneline
-git add web/js/commit.json
+git add web/js/gitinfo.js
 git commit -m "$MESSAGE"
