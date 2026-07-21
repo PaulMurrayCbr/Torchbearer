@@ -276,7 +276,15 @@ export class App {
         document.getElementById("help").classList.remove("hidden");
 
         // I'll just jam this subscription into the torch object
-        torch.appSubscription = torch.state$.subscribe(state => {
+        torch.appSubscription = torch.state$.subscribe(
+            /** @param {TorchState} state */
+            state => {
+            if(state.ignited) {
+                // remove this, b/c the user now knows they can select a torch
+                document.getElementById("help").classList.add("hidden");
+            }
+
+
             this.checkTorchState();
         })
     }
@@ -291,6 +299,7 @@ export class App {
         torch.appSubscription.unsubscribe();
         torch.stop();
         torch.element.remove();
+
         this.torches = this.torches.filter(t => t !== torch);
 
         if (this.torches.length === 0) {
@@ -305,6 +314,8 @@ export class App {
      * @param {Torch} torch
      */
     selectTorch(torch) {
+        // remove this, b/c the user now knows they can select a torch
+        document.getElementById("help").classList.add("hidden");
         this.selectedTorch$.next(torch);
     }
 
