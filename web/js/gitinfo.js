@@ -1,1 +1,1 @@
-export const gitinfo = {"commit":"7f01def","hash":"7f01def8bf8c162f79387cf31def0bd678aacc4e","timestamp":"2026-07-21T19:51:26+10:00","message":"torch resizing fixed","tag":"v0.0.0-11-g7f01def","ref":"HEAD -> resizing-issue"};
+export const gitinfo = {"commit":"613dedb","hash":"613dedb158a1bc7fc250db3c99ecb870dc3c1169","timestamp":"2026-07-21T19:51:26+10:00","message":"torch resizing fixed","tag":"v0.1.0","ref":"HEAD -> main, tag: v0.1.0, resizing-issue"};
