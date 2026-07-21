@@ -1,6 +1,18 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
-import {BehaviorSubject, delay, filter, fromEvent, map, of, Subject, switchAll, timer} from "https://esm.sh/rxjs";
+import {
+    BehaviorSubject,
+    debounceTime,
+    delay,
+    filter,
+    fromEvent,
+    map,
+    Observable,
+    of,
+    Subject,
+    switchAll,
+    timer
+} from "https://esm.sh/rxjs";
 import {Torch} from "./torch.js";
 import {Toaster} from "./toaster.js";
 
@@ -67,6 +79,8 @@ export class App {
     timePassesTimeout$ = new Subject();
 
     timeMenuOpen = false
+
+    static aspect = 331 / 980;
 
     /**
      * @param {HTMLElement} element
@@ -261,6 +275,19 @@ export class App {
 
         this.handleSplash();
 
+        const resizePipe$ = new Observable(subscriber => {
+            const observer = new ResizeObserver(elements => {
+                subscriber.next(elements);
+            });
+            observer.observe(document.getElementById("torches-grid"));
+            observer.observe(document.getElementById("torches-sizing-grid"));
+            return () => observer.disconnect();
+        });
+
+        resizePipe$.pipe(
+            debounceTime(100)
+        ).subscribe(this.doTorchResizing.bind(this));
+
     }
 
     addTorch() {
@@ -268,8 +295,18 @@ export class App {
         const clone = template.content.cloneNode(true);
         const element = clone.firstElementChild;
         document.getElementById("torches-grid").appendChild(element);
+
+        const sizingClone = template.content.cloneNode(true);
+        const sizingElement = sizingClone.firstElementChild;
+        document.getElementById("torches-sizing-grid").appendChild(sizingElement);
+
         const torch = new Torch(this, element);
+
+        torch.sizingElement = sizingElement; // this is my own business
+
         this.torches.push(torch);
+        this.doTorchResizing();
+
         this.markTime();
         torch.start();
         document.getElementById("start-hint").classList.add("hidden");
@@ -279,14 +316,15 @@ export class App {
         torch.appSubscription = torch.state$.subscribe(
             /** @param {TorchState} state */
             state => {
-            if(state.ignited) {
-                // remove this, b/c the user now knows they can select a torch
-                document.getElementById("help").classList.add("hidden");
-            }
+                if (state.ignited) {
+                    // remove this, b/c the user now knows they can select a torch
+                    document.getElementById("help").classList.add("hidden");
+                }
 
 
-            this.checkTorchState();
-        })
+                this.checkTorchState();
+            })
+
     }
 
     /**
@@ -299,8 +337,10 @@ export class App {
         torch.appSubscription.unsubscribe();
         torch.stop();
         torch.element.remove();
+        torch.sizingElement.remove();
 
         this.torches = this.torches.filter(t => t !== torch);
+        this.doTorchResizing();
 
         if (this.torches.length === 0) {
             document.getElementById("start-hint").classList.remove("hidden");
@@ -367,5 +407,124 @@ export class App {
                 splashFade.remove();
             });
         });
+    }
+
+    doTorchResizing() {
+        console.log("DO TORCH RESIZING!")
+        if (this.torches.length === 0) return;
+
+        document.documentElement.style.setProperty(
+            "--torch-sizing-height", '1rem'
+        );
+        document.documentElement.style.setProperty(
+            "--torch-sizing-width", App.aspect + 'rem'
+        );
+
+        requestAnimationFrame(() => {
+            this.resizedUpTo(1, 1, 0)
+        });
+    }
+
+    resizedUpTo(lastGoodHeight, newHeight, steps) {
+        if(steps > 100) {
+            document.documentElement.style.setProperty(
+                "--torch-sizing-height", lastGoodHeight + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-sizing-width", (lastGoodHeight * App.aspect) + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-height", lastGoodHeight + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-width", (lastGoodHeight * App.aspect) + 'rem'
+            );
+        }
+
+        const overflowing = this.isOverflowing();
+
+        if (overflowing) {
+            this.resizedInTo(lastGoodHeight, newHeight, newHeight, steps);
+        } else {
+            const nextHeight = newHeight * 1.616;
+
+            document.documentElement.style.setProperty(
+                "--torch-sizing-height", nextHeight + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-sizing-width", (nextHeight * App.aspect) + 'rem'
+            );
+
+            requestAnimationFrame(() => {
+                this.resizedUpTo(newHeight, nextHeight, steps+1);
+            });
+        }
+    }
+
+    resizedInTo(lastGoodHeight, lastTooBig, newHeight, steps) {
+        if(steps > 100 || (lastTooBig-lastGoodHeight) < .25) {
+            document.documentElement.style.setProperty(
+                "--torch-sizing-height", lastGoodHeight + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-sizing-width", (lastGoodHeight * App.aspect) + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-height", lastGoodHeight + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-width", (lastGoodHeight * App.aspect) + 'rem'
+            );
+
+            return;
+        }
+
+        let nextHeight;
+        if(this.isOverflowing()) {
+            nextHeight = (lastGoodHeight + newHeight) / 2;
+
+            document.documentElement.style.setProperty(
+                "--torch-sizing-height", nextHeight + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-sizing-width", (nextHeight * App.aspect) + 'rem'
+            );
+
+            requestAnimationFrame(() => {
+                this.resizedInTo(lastGoodHeight, newHeight, nextHeight, steps+1);
+            });
+        }
+        else {
+            nextHeight = (newHeight + lastTooBig) / 2;
+
+            document.documentElement.style.setProperty(
+                "--torch-sizing-height", nextHeight + 'rem'
+            );
+            document.documentElement.style.setProperty(
+                "--torch-sizing-width", (nextHeight * App.aspect) + 'rem'
+            );
+
+            requestAnimationFrame(() => {
+                this.resizedInTo(newHeight,lastTooBig, nextHeight, steps+1);
+            });
+        }
+
+    }
+
+    isOverflowing() {
+        const grid = document.getElementById("torches-sizing-grid");
+
+        let right  = 0;
+        let bottom = 0;
+
+        for ( const torch of grid.children) {
+            const r = torch.getBoundingClientRect();
+            right = Math.max(r.right, right);
+            bottom = Math.max(r.bottom, bottom);
+        }
+
+       return            right >= grid.getBoundingClientRect().right ||
+            bottom >= grid.getBoundingClientRect().bottom;
+
     }
 }

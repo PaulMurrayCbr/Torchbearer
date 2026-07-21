@@ -37,18 +37,15 @@
         <span id="buttons">
             <button id="addTorch">🔥</button>
 
-
-<div class="dropdown" id="time-passes-container">
-            <button id="time-passes">⌛</button>
-
-    <div class="dropdown-menu" id="time-passes-dropdown">
-        <div class="title">Time passes &hellip;</div>
-        <button class="minutes-pass" data-min="60">1 hr</button>
-        <button class="minutes-pass" data-min="10">10 min</button>
-        <button class="minutes-pass" data-min="1">1 min</button>
-    </div>
-</div>
-
+            <div class="dropdown" id="time-passes-container">
+                <button id="time-passes">⌛</button>
+                <div class="dropdown-menu" id="time-passes-dropdown">
+                    <div class="title">Time passes &hellip;</div>
+                    <button class="minutes-pass" data-min="60">1 hr</button>
+                    <button class="minutes-pass" data-min="10">10 min</button>
+                    <button class="minutes-pass" data-min="1">1 min</button>
+                </div>
+            </div>
 
             <button id="pause">❚❚</button>
         </span>
@@ -67,7 +64,11 @@
         <div id="toaster">
         </div>
         <div class="hidden" id="paused"></div>
-        <div id="torches-grid">
+        <div id="torch-grid-container">
+            <div class="tgrid" id="torches-grid">
+            </div>
+            <div class="tgrid" id="torches-sizing-grid">
+            </div>
         </div>
     </main>
 

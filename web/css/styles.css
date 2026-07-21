@@ -1,16 +1,24 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
 *, *::before, *::after {
-    box-sizing: border-box;
 }
 
 :root {
+    box-sizing: border-box;
+
     --yellow: #f0a500;
     --disabled-yellow: #8a5f00;
     --gray: #a0a0a0;
     --dark: #606060;
     /** brightness goes from 80 to 20 */
     --brightness: 20;
+
+    --torch-width: 1rem;
+    --torch-height: 3rem;
+    --torch-sizing-width: 2rem;
+    --torch-sizing-height: 6rem;
+
+
 
     /* getting rid of annoying artifacts when clicking */
     -webkit-user-select: none;
@@ -106,7 +114,7 @@ button::-moz-focus-inner {
 button:active {
     transform: translateY(.125rem);
 
-    transition: transform 100ms ease-out;
+    transition: transform 200ms linear;
 
     outline: none;
 
@@ -133,10 +141,10 @@ button.disabled:active {
     grid-template-rows:
         auto    /* toolbar */
         minmax(0, 1fr) /* torch area */
-        auto
         auto; /* control panel */
 
-    height: 100dvh;
+    position: absolute;
+    inset: 0;
 }
 
 #torches {
@@ -145,59 +153,75 @@ button.disabled:active {
     height: 100%;
 }
 
-#torches-grid {
+#torch-grid-container {
     width: 100%;
     height: 100%;
+    display: flex;
+    margin-bottom: .5rem;
+}
 
-    min-height: 0;
-
-    display: grid;
-
-    grid-template-columns: repeat(auto-fit, minmax(17%, 1fr));
-    grid-auto-rows: 1fr;
-
-    gap: 1rem;
-    padding: 5%;
-
-    align-items: center;
-    justify-items: center;
+.tgrid {
+    margin: 1rem;
 
     overflow: hidden;
 
-}
-
-.torch-container {
-    max-width: 90%;
-    max-height: 90%;
     min-height: 0;
 
-    object-fit: contain;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
 
-    padding-bottom: 10px;
-    border: 2px solid transparent;
+}
+
+#torches-grid  {
+    position: absolute;
+    inset: 0;
+}
+
+#torches-sizing-grid  {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+.torch-container {
+    position: relative;
+    display: inline-block;
+
+    border: thin solid transparent;
     border-radius: 50%;
+    min-height: 0;
+    object-fit: fill;
+}
 
-    color: aquamarine;
+#torches-grid > .torch-container {
+    width: var(--torch-width);
+    height: var(--torch-height);
 
-    display: grid;
+    transition: width .25s ease-out, height .25s ease-out;
+}
+
+#torches-sizing-grid > .torch-container {
+    width: var(--torch-sizing-width);
+    height: var(--torch-sizing-height);
 }
 
 
-.torch-container.selected {
-    border: 2px solid var(--yellow);
-}
-
+.torch-container.selected {border: 2px solid var(--yellow);}
 
 .torch-container > img {
-    inset: 0;
+    position: absolute;
 
-    grid-area: 1 / 1;
-
+    left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-
-    max-height: 50dvh;
+    min-height: 0;
 
     opacity: .5;
     transition: opacity 1s linear;
@@ -323,7 +347,7 @@ button.disabled:active {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    transition: max-height 1s ease-in-out;
+    transition: max-height .5s ease-out;
 }
 
 #panel-container.open {
@@ -464,7 +488,7 @@ button.disabled:active {
 #splash {
     max-width: 100%;
     max-height: 100%;
-    transition: opacity 5s ease;
+    transition: opacity 3s linear;
 }
 
 #splash-fade {
@@ -476,5 +500,5 @@ button.disabled:active {
     background-color: #e0e0e0;
     z-index: 999;
 
-    transition: opacity 4s ease;
+    transition: opacity 2s linear;
 }
