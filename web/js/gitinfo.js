@@ -1,1 +1,1 @@
-export const gitinfo = {"commit":"03fdccd","hash":"03fdccd5e1aa1215aeac845b5186d239a77a00ff","timestamp":"2026-07-21T20:06:23+10:00","message":"publish","tag":"v0.1.0-2-g03fdccd","ref":"HEAD -> main"};
+export const gitinfo = {"commit":"99ee1fb","hash":"99ee1fbe976010ae5044cd539091e4ff1dbaffca","timestamp":"2026-07-22T14:26:59+10:00","message":"Splash again, resize torch before adding the element on torch add.","tag":"v0.1.1","ref":"HEAD -> main, tag: v0.1.1"};
