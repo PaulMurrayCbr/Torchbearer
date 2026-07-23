@@ -5,7 +5,6 @@
     <title>Torchbearer</title>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
-    <link href="manifest.json" rel="manifest">
     <meta content="#333333" name="theme-color">
     <meta content="Torchbearer" name="description">
     <link href="favicon.ico" rel="icon">
@@ -142,12 +141,5 @@
 </div>
 
 <script src="js/main.js" type="module"></script>
-
-<script>
-    window.addEventListener("load", () => {
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("./service-worker.js");
-        }
-    });
-</script></body>
+</body>
 </html>
