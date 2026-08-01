@@ -12,21 +12,21 @@ export class Sound {
 
     static loadSounds() {
         try {
-            Sound.torchOnSound = new Audio("../media/djartmusic-short-fire-whoosh_1-317280.mp3");
+            Sound.torchOnSound = new Audio("../media/ignite.ogg");
             Sound.torchOnSound.preload = "auto";
         } catch (e) {
             console.error(e);
         }
 
         try {
-            Sound.torchOffSound = new Audio("../media/musicholder-fire-extinguishing-212651.mp3");
+            Sound.torchOffSound = new Audio("../media/extinguish.ogg");
             Sound.torchOffSound.preload = "auto";
         } catch (e) {
             console.error(e);
         }
 
         try {
-            Sound.bellSound = new Audio("../media/universfield-church-bell-toll-156464.mp3");
+            Sound.bellSound = new Audio("../media/darkness.ogg");
             Sound.bellSound.preload = "auto";
         } catch (e) {
             console.error(e);
