@@ -4,6 +4,8 @@
 // TODO: Fssst when you extinguish a torch
 // TODO: Ding ding! When it goes dark but only as a result of a torch burning out.
 
+// TODO: save state.
+
 const {
     BehaviorSubject,
     debounceTime,
