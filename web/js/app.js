@@ -139,7 +139,6 @@ export class App {
             );
         });
 
-
         this.toaster.start();
 
         this.handleSplash();
@@ -282,6 +281,15 @@ export class App {
 
     }
 
+
+    /**
+     * When a torch is selected, it is put in the panel closer. When no torch is selected, a null is put into this
+     * observable with a  delay. A switchAll keeps the panel open if a torch is selected or 5 seconds after
+     * no torch is selectd.
+     * @type {Observable<Observable<null|Torch>>}
+     */
+    panelCloser$ = new BehaviorSubject(of(null));
+
     setupPanelListeners() {
         const labelText = document.getElementById("label-text");
 
@@ -289,17 +297,24 @@ export class App {
             /** @param {Torch} torch */
             torch => {
                 if (torch) {
-                    this.element.querySelector("#panel-container").classList.add("open");
-                    this.selectedIllumination$.next(torch.state$);
                     labelText.textContent = torch.label;
                     labelText.contentEditable = "plaintext-only";
+                    this.panelCloser$.next(of(torch));
                 } else {
-                    this.element.querySelector("#panel-container").classList.remove("open");
                     labelText.textContent = "";
                     labelText.contentEditable = "false";
-                    this.selectedIllumination$.next(of(null));
+                    this.panelCloser$.next(of(torch).pipe(delay(5000)));
                 }
             });
+
+        this.panelCloser$.pipe(switchAll()).subscribe(torch => {
+                if (torch) {
+                    this.element.querySelector("#panel-container").classList.add("open");
+                } else {
+                    this.element.querySelector("#panel-container").classList.remove("open");
+                }
+            }
+        );
 
         this.selectedIllumination$
             .pipe(
@@ -446,6 +461,7 @@ export class App {
         // remove this, b/c the user now knows they can select a torch
         document.getElementById("help").classList.add("hidden");
         this.selectedTorch$.next(torch);
+        this.selectedIllumination$.next(torch?.state$ ?? of(null));
     }
 
     checkTorchState() {
