@@ -1,5 +1,10 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
+// TODO: Fwoosh when you light a torch
+// TODO: Fssst when you extinguish a torch
+// TODO: Ding ding! When it goes dark but only as a result of a torch burning out.
+// TODO: Leave the panel open for 10 sec when no torch is selected.
+
 const {
     BehaviorSubject,
     debounceTime,
@@ -68,12 +73,27 @@ export class App {
      */
     torches = [];
 
+    /**
+     * The currently selected torh. May be null. Changes when the user selects a torch.
+     * @type {BehaviorSubject<Torch|null>}
+     */
     selectedTorch$ = new BehaviorSubject(null);
 
+    /**
+     * A second-order observable that emits the current illumination state of the current torch. Changes when the user
+     * selects a torch or as the torch burns down.
+     * @type {BehaviorSubject<BehaviorSubject<TorchState>|null>}
+     */
     selectedIllumination$ = new BehaviorSubject(of(null));
 
     appState = AppState.RUNNING;
     appState$ = new BehaviorSubject(this.appState);
+
+    /**
+     * The global illumination state. Changes as the torches burn down. The global ilumination state is the maximum of
+     * the individual torch states.
+     * @type {BehaviorSubject<Illumination>}
+     */
     illumination$ = new BehaviorSubject(new Illumination(true, 0));
 
     timePasses$ = new Subject();
@@ -86,7 +106,7 @@ export class App {
     static aspect = 331 / 980;
 
     /**
-     * @param {HTMLElement} element
+     * @param {HTMLElement} root element of the torchbearer app.
      */
 
     constructor(element) {
@@ -95,47 +115,121 @@ export class App {
     }
 
     start() {
-        fromEvent(this.element.querySelector("#title"), "click")
-            .subscribe(() => {
-                this.element.querySelector("#info-container").classList.add("open");
-                requestAnimationFrame(() => {
-                    this.element.querySelector("#info").classList.add("open");
-                })
-            })
+        this.setupInfoScreen();
+        this.setupPause();
+        this.setupAddTorch();
+        this.setupTimePasses();
 
-        fromEvent(this.element.querySelector("#info-container"), "click")
-            .subscribe(() => {
-                fromEvent(this.element.querySelector("#info"), "transitionend")
-                    .pipe(first())
-                    .subscribe(() => {
-                        this.element.querySelector("#info-container").classList.remove("open");
-                    });
-                this.element.querySelector("#info").classList.remove("open");
-            })
+        this.setupPanel();
 
-        fromEvent(this.element.querySelector("#pause"), "click")
-            .subscribe(() => {
-                this.markTime();
-                this.appState = this.appState.toggle();
+        this.checkTorchState();
 
-                if (this.appState.isPaused()) {
-                    this.element.querySelector("#pause").classList.add("on");
-                    this.element.querySelector("#paused").classList.remove("hidden");
-                    this.selectedTorch$.next(null);
-                    this.toaster.show("The passage of time has halted!");
-                } else {
-                    this.element.querySelector("#pause").classList.remove("on");
-                    this.element.querySelector("#paused").classList.add("hidden");
-                    this.toaster.show("The passage of time is resumed …");
-                }
+        // global illumination state
 
-                this.appState$.next(this.appState);
+        this.illumination$.subscribe(illumination => {
+            if (illumination.dark) {
+                this.element.querySelector("#darkness").classList.add("visible");
+            } else {
+                this.element.querySelector("#darkness").classList.remove("visible");
+            }
+
+            document.documentElement.style.setProperty(
+                "--brightness",
+                Math.trunc(20 + illumination.percent * .6).toString()
+            );
+        });
+
+
+        this.toaster.start();
+
+        this.handleSplash();
+        this.setupResizeHandlers();
+
+        const timer = setInterval(() => {
+            this.markTime();
+        }, 10000);
+    }
+
+    setupResizeHandlers() {
+        const resizePipe$ = new Observable(subscriber => {
+            const observer = new ResizeObserver(elements => {
+                subscriber.next(elements);
             });
+            observer.observe(document.getElementById("torches-grid"));
+            observer.observe(document.getElementById("torches-sizing-grid"));
+            return () => observer.disconnect();
+        });
 
+        resizePipe$.pipe(
+            debounceTime(100)
+        ).subscribe(() => this.doTorchResizing());
+    }
+
+    setupAddTorch() {
         fromEvent(this.element.querySelector("#addTorch"), "click")
             .subscribe(() => {
                 this.addTorch();
             });
+    }
+
+    setupTimePasses() {
+        fromEvent(this.element.querySelector("#time-passes"), "click")
+            .subscribe(() => {
+                this.timeMenuOpen = !this.timeMenuOpen;
+                if (this.timeMenuOpen) {
+                    this.element.querySelector("#time-passes").classList.add("on");
+                    this.element.querySelector("#time-passes-container").classList.add("open");
+                } else {
+                    this.element.querySelector("#time-passes").classList.remove("on");
+                    this.element.querySelector("#time-passes-container").classList.remove("open");
+                }
+                this.timePassesTimeout$.next('MENU');
+            });
+
+        this.timePassesTimeout$.pipe(
+            map(z => z === 'BUTTON' ? of(z).pipe(delay(3000)) : of(z)),
+            switchAll(),
+            filter(z => z === 'BUTTON'),
+        ).subscribe(
+            () => {
+                if (this.timeMenuOpen) {
+                    this.timeMenuOpen = false;
+                    this.element.querySelector("#time-passes").classList.remove("on");
+                    this.element.querySelector("#time-passes-container").classList.remove("open");
+                }
+            }
+        )
+
+
+        this.element.querySelectorAll(".minutes-pass").forEach(button => {
+            fromEvent(button, "click").subscribe(() => {
+                const min = Number(button.dataset.min);
+                this.markTime();
+                this.timePasses$.next(min);
+                this.toaster.show(min + " minute" + (min > 1 ? "s" : "") + " pass" + (min > 1 ? "" : "es") + "…");
+                this.timePassesTimeout$.next('BUTTON');
+            });
+        });
+
+    }
+
+    setupPanel() {
+        this.setupPanelButtons();
+        this.setupPanelListeners();
+    }
+
+    setupPanelButtons() {
+        const labelText = document.getElementById("label-text");
+
+        fromEvent(labelText, "input")
+            .subscribe(() => {
+                /** @type {Torch} */
+                const selectedTorch = this.selectedTorch$.getValue();
+                if (selectedTorch) {
+                    selectedTorch.setLabel(labelText.textContent);
+                }
+            });
+
         fromEvent(this.element.querySelector("#close-panel"), "click")
             .subscribe(() => {
                 this.selectTorch(null);
@@ -177,20 +271,6 @@ export class App {
                 }
             });
 
-
-        fromEvent(this.element.querySelector("#time-passes"), "click")
-            .subscribe(() => {
-                this.timeMenuOpen = !this.timeMenuOpen;
-                if (this.timeMenuOpen) {
-                    this.element.querySelector("#time-passes").classList.add("on");
-                    this.element.querySelector("#time-passes-container").classList.add("open");
-                } else {
-                    this.element.querySelector("#time-passes").classList.remove("on");
-                    this.element.querySelector("#time-passes-container").classList.remove("open");
-                }
-                this.timePassesTimeout$.next('MENU');
-            });
-
         this.element.querySelectorAll(".set-minutes").forEach(button => {
             fromEvent(button, "click").subscribe(() => {
                 if (this.selectedTorch$.getValue()) {
@@ -200,47 +280,9 @@ export class App {
             });
         });
 
-        this.timePassesTimeout$.pipe(
-            map(z => z === 'BUTTON' ? of(z).pipe(delay(3000)) : of(z)),
-            switchAll(),
-            filter(z => z === 'BUTTON'),
-        ).subscribe(
-            () => {
-                if (this.timeMenuOpen) {
-                    this.timeMenuOpen = false;
-                    this.element.querySelector("#time-passes").classList.remove("on");
-                    this.element.querySelector("#time-passes-container").classList.remove("open");
-                }
-            }
-        )
+    }
 
-
-        this.element.querySelectorAll(".minutes-pass").forEach(button => {
-            fromEvent(button, "click").subscribe(() => {
-                const min = Number(button.dataset.min);
-                this.markTime();
-                this.timePasses$.next(min);
-                this.toaster.show(min + " minute" + (min > 1 ? "s" : "") + " pass" + (min > 1 ? "" : "es") + "…");
-                this.timePassesTimeout$.next('BUTTON');
-            });
-        });
-
-        this.checkTorchState();
-
-        this.illumination$.subscribe(illumination => {
-            if (illumination.dark) {
-                this.element.querySelector("#darkness").classList.add("visible");
-            } else {
-                this.element.querySelector("#darkness").classList.remove("visible");
-            }
-
-            document.documentElement.style.setProperty(
-                "--brightness",
-                Math.trunc(20 + illumination.percent * .6).toString()
-            );
-
-        });
-
+    setupPanelListeners() {
         const labelText = document.getElementById("label-text");
 
         this.selectedTorch$.subscribe(
@@ -282,8 +324,6 @@ export class App {
 
                         this.element.querySelector("#recharge-torch").classList.remove("disabled");
                         this.element.querySelector("#discard-torch").classList.remove("disabled");
-
-
                     } else {
                         // this almost never happens
                         this.element.querySelector("#time-remaining").textContent = "No selection";
@@ -292,39 +332,50 @@ export class App {
                         this.element.querySelector("#extinguish-torch").classList.add("disabled");
                         this.element.querySelector("#recharge-torch").classList.add("disabled");
                         this.element.querySelector("#discard-torch").classList.add("disabled");
-
                     }
-                })
+                });
 
-        this.toaster.start();
+    }
 
-        const timer = setInterval(() => {
-            this.markTime();
-        }, 10000);
-
-        this.handleSplash();
-
-        const resizePipe$ = new Observable(subscriber => {
-            const observer = new ResizeObserver(elements => {
-                subscriber.next(elements);
-            });
-            observer.observe(document.getElementById("torches-grid"));
-            observer.observe(document.getElementById("torches-sizing-grid"));
-            return () => observer.disconnect();
-        });
-
-        resizePipe$.pipe(
-            debounceTime(100)
-        ).subscribe(() => this.doTorchResizing());
-
-        fromEvent(labelText, "input")
+    setupPause() {
+        fromEvent(this.element.querySelector("#pause"), "click")
             .subscribe(() => {
-                /** @type {Torch} */
-                const selectedTorch = this.selectedTorch$.getValue();
-                if (selectedTorch) {
-                    selectedTorch.setLabel(labelText.textContent);
+                this.markTime();
+                this.appState = this.appState.toggle();
+
+                if (this.appState.isPaused()) {
+                    this.element.querySelector("#pause").classList.add("on");
+                    this.element.querySelector("#paused").classList.remove("hidden");
+                    this.selectedTorch$.next(null);
+                    this.toaster.show("The passage of time has halted!");
+                } else {
+                    this.element.querySelector("#pause").classList.remove("on");
+                    this.element.querySelector("#paused").classList.add("hidden");
+                    this.toaster.show("The passage of time is resumed …");
                 }
+
+                this.appState$.next(this.appState);
             });
+    }
+
+    setupInfoScreen() {
+        fromEvent(this.element.querySelector("#title"), "click")
+            .subscribe(() => {
+                this.element.querySelector("#info-container").classList.add("open");
+                requestAnimationFrame(() => {
+                    this.element.querySelector("#info").classList.add("open");
+                })
+            })
+
+        fromEvent(this.element.querySelector("#info-container"), "click")
+            .subscribe(() => {
+                fromEvent(this.element.querySelector("#info"), "transitionend")
+                    .pipe(first())
+                    .subscribe(() => {
+                        this.element.querySelector("#info-container").classList.remove("open");
+                    });
+                this.element.querySelector("#info").classList.remove("open");
+            })
     }
 
     addTorch() {
@@ -359,7 +410,6 @@ export class App {
                     // remove this, b/c the user now knows they can select a torch
                     document.getElementById("help").classList.add("hidden");
                 }
-
 
                 this.checkTorchState();
             })
