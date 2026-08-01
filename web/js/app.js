@@ -3,7 +3,6 @@
 // TODO: Fwoosh when you light a torch
 // TODO: Fssst when you extinguish a torch
 // TODO: Ding ding! When it goes dark but only as a result of a torch burning out.
-// TODO: Leave the panel open for 10 sec when no torch is selected.
 
 const {
     BehaviorSubject,
@@ -231,6 +230,7 @@ export class App {
 
         fromEvent(this.element.querySelector("#close-panel"), "click")
             .subscribe(() => {
+                this.element.querySelector("#panel-container").classList.remove("open");
                 this.selectTorch(null);
             });
         fromEvent(this.element.querySelector("#discard-torch"), "click")
