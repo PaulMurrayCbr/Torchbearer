@@ -24,6 +24,7 @@ const {
 
 import {Torch} from "./torch.js";
 import {Toaster} from "./toaster.js";
+import {Sound} from "./sound.js";
 
 export class AppState {
 
@@ -116,6 +117,8 @@ export class App {
     }
 
     start() {
+        Sound.loadSounds();
+
         this.setupInfoScreen();
         this.setupPause();
         this.setupAddTorch();

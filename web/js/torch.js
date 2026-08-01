@@ -4,6 +4,7 @@ const {BehaviorSubject, Subject, takeUntil} = rxjs;
 
 import {App} from "./app.js";
 import {clickListener$, LONG} from "./clicklistener.js";
+import {Sound} from "./sound.js";
 
 export class TorchState {
     constructor(ignited, maxMinutes, minutesRemaining) {
@@ -133,12 +134,13 @@ export class Torch {
         this.ignited = true;
         this.update();
         this.app.toaster.show(this.state.getTimeDisplay());
-
+        Sound.ignite();
     }
 
     extinguish() {
         this.ignited = false;
         this.update();
+        Sound.extinguish();
     }
 
     recharge() {
