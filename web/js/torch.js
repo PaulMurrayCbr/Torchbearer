@@ -1,5 +1,7 @@
 /* © Paul Murray 2026 https://github.com/PaulMurrayCbr/Torchbearer */
 
+import {Save} from "./save.js";
+
 const {BehaviorSubject, Subject, takeUntil} = rxjs;
 
 import {App} from "./app.js";
@@ -146,12 +148,14 @@ export class Torch {
         this.update();
         this.app.toaster.show(this.state.getTimeDisplay());
         Sound.ignite();
+        Save.saveApp(this.app);
     }
 
     extinguish() {
         this.ignited = false;
         this.update();
         Sound.extinguish();
+        Save.saveApp(this.app);
     }
 
     recharge() {
@@ -161,12 +165,14 @@ export class Torch {
         }
         this.minutesRemaining = this.maxMinutes;
         this.update();
+        Save.saveApp(this.app);
     }
 
     setMaxMinutes(minutes) {
         this.minutesRemaining *= minutes / this.maxMinutes;
         this.maxMinutes = minutes;
         this.update();
+        Save.saveApp(this.app);
     }
 
     update(torchBurndown = false) {

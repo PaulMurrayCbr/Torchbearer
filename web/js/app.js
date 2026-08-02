@@ -141,6 +141,8 @@ export class App {
     start() {
         Sound.loadSounds();
 
+        const save = Save.readSave();
+
         this.setupInfoScreen();
         this.setupPause();
         this.setupAddTorch();
@@ -167,20 +169,11 @@ export class App {
 
         this.toaster.start();
 
-        this.handleSplash();
         this.setupResizeHandlers();
+        this.fromJson(Save.readSave());
 
-        const save = Save.readSave();
-
-        if (save) {
-            this.fromJson(save);
-        }
-
-        this.maybeAdvanceTimeFromSave(save).then(
-            () => setInterval(() => {
-                this.markTime();
-            }, 10000)
-        );
+        // this is a sequence of things
+        this.handleSplash(save);
     }
 
     setupResizeHandlers() {
@@ -501,7 +494,7 @@ export class App {
 
         this.checkTorchState();
 
-        if(doResizing) {
+        if (doResizing) {
             this.doTorchResizing();
         }
     }
@@ -562,7 +555,7 @@ export class App {
         Save.saveApp(this);
     }
 
-    handleSplash() {
+    handleSplash(save) {
 
         /** @type {HTMLImageElement} */
         const splash = document.getElementById("splash");
@@ -600,6 +593,12 @@ export class App {
                         sub.unsubscribe();
                         splashContainer.style.setProperty("display", "none");
                         splashContainer.remove();
+
+                        this.maybeAdvanceTimeFromSave(save).then(
+                            () => setInterval(() => {
+                                this.markTime();
+                            }, 10000)
+                        );
                     });
                 });
 
@@ -633,19 +632,19 @@ export class App {
         let steps = 0;
         let overflowing = false;
 
-        while(steps++ < 100 && !overflowing) {
+        while (steps++ < 100 && !overflowing) {
             lastGoodHeight = newHeight;
             newHeight *= 1.616;
 
             this.setTorchSizing(newHeight);
             await nextFrame();
-            if(this.torchResizingToken !== myToken) {
+            if (this.torchResizingToken !== myToken) {
                 return;
             }
             overflowing = this.isOverflowing();
         }
 
-        if(steps >= 100) {
+        if (steps >= 100) {
             this.setTorchSizing(lastGoodHeight, true);
             await nextFrame();
             return;
@@ -653,18 +652,17 @@ export class App {
 
         let lastTooBig = newHeight;
 
-        while(steps++ < 100 && (lastTooBig - lastGoodHeight) > .25) {
-            if(overflowing) {
+        while (steps++ < 100 && (lastTooBig - lastGoodHeight) > .25) {
+            if (overflowing) {
                 lastTooBig = newHeight;
-            }
-            else {
+            } else {
                 lastGoodHeight = newHeight;
             }
 
             newHeight = (lastGoodHeight + lastTooBig) / 2;
             this.setTorchSizing(newHeight);
             await nextFrame();
-            if(this.torchResizingToken !== myToken) {
+            if (this.torchResizingToken !== myToken) {
                 return;
             }
             overflowing = this.isOverflowing();
@@ -738,31 +736,76 @@ export class App {
     }
 
     /**
+     *
      * @param {{}|undefined} json
+     * @returns {Promise<void>}
      */
-
     async maybeAdvanceTimeFromSave(json) {
         if (!json || json.version !== 1) {
             return;
         }
 
-        let torchesLit = false;
-
-        for (const t of this.torches) {
-            if (t.ignited) {
-                torchesLit = true;
-                break;
-            }
-        }
-
-        if (!torchesLit) {
+        if (!this.torches.reduce((ignited, torch) => ignited || torch.ignited, false)) {
             return;
         }
 
         const oldTime = new Date(json.timeMark);
         const newTime = new Date();
 
-        console.log(oldTime, newTime);
+        const elapsedMs = newTime.getTime() - oldTime.getTime();
+
+        const elapseddDays = Math.round(elapsedMs / (1000 * 60 * 60 * 24));
+        const elapseddHours = Math.round(elapsedMs / (1000 * 60 * 60));
+        const elapseddMinutes = Math.round(elapsedMs / (1000 * 60) / 5) * 5;
+
+        const timeElement = document.getElementById("onload-time-burned");
+
+        if (elapseddDays > 0) {
+            timeElement.textContent = `about ${elapseddDays} days`;
+        } else if (elapseddHours > 0) {
+            timeElement.textContent = `about ${elapseddHours} hours`;
+        } else if (elapseddMinutes > 0) {
+            timeElement.textContent = `about ${elapseddMinutes} minutes`;
+        } else {
+            timeElement.textContent = `a few seconds ${elapsedMs / (1000)}`;
+        }
+
+        await nextFrame();
+        this.element.querySelector("#onload-container").classList.add("open");
+        await nextFrame();
+        this.element.querySelector("#onload").classList.add("open");
+
+        const yesOrNo = new Promise(resolve => {
+            const yes = document.getElementById("onload-time-burned-yes");
+            const no = document.getElementById("onload-time-burned-no");
+
+            const finish = (answer) => {
+                yes.removeEventListener("click", yesHandler);
+                no.removeEventListener("click", noHandler);
+                resolve(answer);
+            };
+
+            const yesHandler = () => finish(true);
+            const noHandler = () => finish(false);
+
+            yes.addEventListener("click", yesHandler);
+            no.addEventListener("click", noHandler);
+        })
+
+        const elapse = await yesOrNo;
+
+        fromEvent(this.element.querySelector("#onload"), "transitionend")
+            .pipe(first())
+            .subscribe(() => {
+                this.element.querySelector("#onload-container").remove();
+            });
+        this.element.querySelector("#onload").classList.remove("open");
+
+        if(elapse) {
+            this.timePasses$.next(
+               (new Date().getTime() - oldTime.getTime()) / 1000 / 60
+            );
+        }
     }
 
 }
