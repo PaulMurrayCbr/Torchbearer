@@ -467,7 +467,7 @@ export class App {
             })
 
         if (doResizing) {
-            this.doTorchResizing(() => element.style.setProperty("display", 'inline-block'));
+            this.doTorchResizing().then(() => element.style.setProperty("display", 'inline-block'));
         }
 
         return torch;
@@ -487,16 +487,16 @@ export class App {
 
         this.torches = this.torches.filter(t => t !== torch);
 
-        if(doResizing) {
-            this.doTorchResizing();
-        }
-
         if (this.torches.length === 0) {
             document.getElementById("start-hint").classList.remove("hidden");
             document.getElementById("help").classList.add("hidden");
         }
 
         this.checkTorchState();
+
+        if(doResizing) {
+            this.doTorchResizing();
+        }
     }
 
     /**
@@ -611,72 +611,60 @@ export class App {
 
     }
 
-    doTorchResizing(onComplete) {
+    torchResizingToken = undefined;
+
+    async doTorchResizing() {
+        const myToken = Symbol();
+        this.torchResizingToken = myToken;
+
         if (this.torches.length === 0) {
-            onComplete && onComplete();
             return;
         }
 
-        document.documentElement.style.setProperty(
-            "--torch-sizing-height", '1rem'
-        );
-        document.documentElement.style.setProperty(
-            "--torch-sizing-width", App.aspect + 'rem'
-        );
+        let lastGoodHeight = 1;
+        let newHeight = 1;
+        let steps = 0;
+        let overflowing = false;
 
-        nextFrame().then(() => {
-            this.resizedUpTo(1, 1, 0, onComplete)
-        });
-    }
+        while(steps++ < 100 && !overflowing) {
+            lastGoodHeight = newHeight;
+            newHeight *= 1.616;
 
-    resizedUpTo(lastGoodHeight, newHeight, steps, onComplete) {
-        // kill this method if it loops too long
-        if (steps > 100) {
+            this.setTorchSizing(newHeight);
+            await nextFrame();
+            if(this.torchResizingToken !== myToken) {
+                return;
+            }
+            overflowing = this.isOverflowing();
+        }
+
+        if(steps >= 100) {
             this.setTorchSizing(lastGoodHeight, true);
-            onComplete && onComplete();
+            await nextFrame();
             return;
         }
 
-        const overflowing = this.isOverflowing();
+        let lastTooBig = newHeight;
 
-        if (overflowing) {
-            this.resizedInTo(lastGoodHeight, newHeight, newHeight, steps, onComplete);
-        } else {
-            const nextHeight = newHeight * 1.616;
-            this.setTorchSizing(nextHeight);
+        while(steps++ < 100 && (lastTooBig - lastGoodHeight) > .25) {
+            if(overflowing) {
+                lastTooBig = newHeight;
+            }
+            else {
+                lastGoodHeight = newHeight;
+            }
 
-            nextFrame().then(() => {
-                this.resizedUpTo(newHeight, nextHeight, steps + 1, onComplete);
-            });
-        }
-    }
-
-    resizedInTo(lastGoodHeight, lastTooBig, newHeight, steps, onComplete) {
-        // kill this method if it loops too long
-        if (steps > 100 || (lastTooBig - lastGoodHeight) < .25) {
-            this.setTorchSizing(lastGoodHeight, true);
-
-            onComplete && onComplete();
-            return;
+            newHeight = (lastGoodHeight + lastTooBig) / 2;
+            this.setTorchSizing(newHeight);
+            await nextFrame();
+            if(this.torchResizingToken !== myToken) {
+                return;
+            }
+            overflowing = this.isOverflowing();
         }
 
-        let nextHeight;
-        if (this.isOverflowing()) {
-            nextHeight = (lastGoodHeight + newHeight) / 2;
-            this.setTorchSizing(nextHeight);
-
-            nextFrame().then(() => {
-                this.resizedInTo(lastGoodHeight, newHeight, nextHeight, steps + 1, onComplete);
-            });
-        } else {
-            nextHeight = (newHeight + lastTooBig) / 2;
-            this.setTorchSizing(nextHeight);
-
-            nextFrame().then(() => {
-                this.resizedInTo(newHeight, lastTooBig, nextHeight, steps + 1, onComplete);
-            });
-        }
-
+        this.setTorchSizing(lastGoodHeight, true);
+        await nextFrame();
     }
 
     /**
@@ -734,7 +722,7 @@ export class App {
             this.addTorch(false).fromJson(tjson);
         }
 
-        this.doTorchResizing(() => {
+        this.doTorchResizing().then(() => {
             for (const t of this.torches) {
                 t.element.style.setProperty("display", 'inline-block');
             }
