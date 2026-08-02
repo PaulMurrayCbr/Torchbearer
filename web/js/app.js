@@ -392,20 +392,27 @@ export class App {
             .subscribe(() => {
                 this.markTime();
                 this.appState = this.appState.toggle();
-
+                this.markTime();
+                this.pauseStateGui();
                 if (this.appState.isPaused()) {
-                    this.element.querySelector("#pause").classList.add("on");
-                    this.element.querySelector("#paused").classList.remove("hidden");
-                    this.selectedTorch$.next(null);
                     this.toaster.show("The passage of time has halted!");
+                    this.selectedTorch$.next(null);
                 } else {
-                    this.element.querySelector("#pause").classList.remove("on");
-                    this.element.querySelector("#paused").classList.add("hidden");
                     this.toaster.show("The passage of time is resumed …");
                 }
-
                 this.appState$.next(this.appState);
             });
+    }
+
+    pauseStateGui() {
+        if (this.appState.isPaused()) {
+            this.element.querySelector("#pause").classList.add("on");
+            this.element.querySelector("#paused").classList.remove("hidden");
+        } else {
+            this.element.querySelector("#pause").classList.remove("on");
+            this.element.querySelector("#paused").classList.add("hidden");
+        }
+
     }
 
     setupInfoScreen() {
@@ -713,6 +720,7 @@ export class App {
         }
 
         this.appState = AppState.byName[json.appState] ?? this.appState;
+        this.pauseStateGui();
 
         while (this.torches.length > 0) {
             this.removeTorch(this.torches[0], false);
