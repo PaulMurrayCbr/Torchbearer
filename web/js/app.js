@@ -21,8 +21,32 @@ const {
 import {Torch} from "./torch.js";
 import {Toaster} from "./toaster.js";
 import {Sound} from "./sound.js";
+import {Save} from "./save.js";
+
+/**
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+export function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * @returns {Promise<void>}
+ */
+export function nextFrame() {
+    return new Promise(resolve => {
+        requestAnimationFrame(resolve);
+    });
+}
+
 
 export class AppState {
+
+    /**
+     * @type {Object<string,AppState>}
+     */
+    static byName = {};
 
     static PAUSED = new AppState("PAUSED");
     static RUNNING = new AppState("RUNNING");
@@ -32,6 +56,7 @@ export class AppState {
      */
     constructor(name) {
         this.name = name;
+        AppState.byName[name] = this;
     }
 
     isPaused() {
@@ -49,7 +74,6 @@ export class AppState {
     toString() {
         return this.name;
     }
-
 }
 
 export class Illumination {
@@ -146,9 +170,17 @@ export class App {
         this.handleSplash();
         this.setupResizeHandlers();
 
-        const timer = setInterval(() => {
-            this.markTime();
-        }, 10000);
+        const save = Save.readSave();
+
+        if (save) {
+            this.fromJson(save);
+        }
+
+        this.maybeAdvanceTimeFromSave(save).then(
+            () => setInterval(() => {
+                this.markTime();
+            }, 10000)
+        );
     }
 
     setupResizeHandlers() {
@@ -380,9 +412,9 @@ export class App {
         fromEvent(this.element.querySelector("#title"), "click")
             .subscribe(() => {
                 this.element.querySelector("#info-container").classList.add("open");
-                requestAnimationFrame(() => {
+                nextFrame().then(() => {
                     this.element.querySelector("#info").classList.add("open");
-                })
+                });
             })
 
         fromEvent(this.element.querySelector("#info-container"), "click")
@@ -396,7 +428,10 @@ export class App {
             })
     }
 
-    addTorch() {
+    /**
+     * @returns {Torch} the newly created torch object
+     */
+    addTorch(doResizing = true) {
         const template = document.getElementById("torch-template");
         const clone = template.content.cloneNode(true);
         const element = clone.firstElementChild;
@@ -413,7 +448,6 @@ export class App {
         torch.sizingElement = sizingElement; // this is my own business
 
         this.torches.push(torch);
-        this.doTorchResizing(() => element.style.setProperty("display", 'inline-block'));
 
         this.markTime();
         torch.start();
@@ -432,12 +466,17 @@ export class App {
                 this.checkTorchState(true);
             })
 
+        if (doResizing) {
+            this.doTorchResizing(() => element.style.setProperty("display", 'inline-block'));
+        }
+
+        return torch;
     }
 
     /**
      * @param {Torch} torch
      */
-    removeTorch(torch) {
+    removeTorch(torch, doResizing = true) {
         if (this.selectedTorch$.getValue() === torch) {
             this.selectedTorch$.next(null);
         }
@@ -447,7 +486,10 @@ export class App {
         torch.sizingElement.remove();
 
         this.torches = this.torches.filter(t => t !== torch);
-        this.doTorchResizing();
+
+        if(doResizing) {
+            this.doTorchResizing();
+        }
 
         if (this.torches.length === 0) {
             document.getElementById("start-hint").classList.remove("hidden");
@@ -509,6 +551,8 @@ export class App {
             this.timePasses$.next(diff / 1000 / 60); // minutes
         }
         this.timeMark = now;
+
+        Save.saveApp(this);
     }
 
     handleSplash() {
@@ -580,7 +624,7 @@ export class App {
             "--torch-sizing-width", App.aspect + 'rem'
         );
 
-        requestAnimationFrame(() => {
+        nextFrame().then(() => {
             this.resizedUpTo(1, 1, 0, onComplete)
         });
     }
@@ -601,7 +645,7 @@ export class App {
             const nextHeight = newHeight * 1.616;
             this.setTorchSizing(nextHeight);
 
-            requestAnimationFrame(() => {
+            nextFrame().then(() => {
                 this.resizedUpTo(newHeight, nextHeight, steps + 1, onComplete);
             });
         }
@@ -621,14 +665,14 @@ export class App {
             nextHeight = (lastGoodHeight + newHeight) / 2;
             this.setTorchSizing(nextHeight);
 
-            requestAnimationFrame(() => {
+            nextFrame().then(() => {
                 this.resizedInTo(lastGoodHeight, newHeight, nextHeight, steps + 1, onComplete);
             });
         } else {
             nextHeight = (newHeight + lastTooBig) / 2;
             this.setTorchSizing(nextHeight);
 
-            requestAnimationFrame(() => {
+            nextFrame().then(() => {
                 this.resizedInTo(newHeight, lastTooBig, nextHeight, steps + 1, onComplete);
             });
         }
@@ -648,7 +692,6 @@ export class App {
             style.setProperty("--torch-height", nextHeight + 'rem');
             style.setProperty("--torch-width", (nextHeight * App.aspect) + 'rem');
         }
-
     }
 
     isOverflowing() {
@@ -666,4 +709,64 @@ export class App {
         return right >= grid.getBoundingClientRect().right ||
             bottom >= grid.getBoundingClientRect().bottom;
     }
+
+    toJson() {
+        return {
+            version: 1,
+            appState: this.appState.name,
+            timeMark: this.timeMark.toISOString(),
+            torches: this.torches.map(torch => torch.toJson())
+        };
+    }
+
+    fromJson(json) {
+        if (!json || json.version !== 1) {
+            return;
+        }
+
+        this.appState = AppState.byName[json.appState] ?? this.appState;
+
+        while (this.torches.length > 0) {
+            this.removeTorch(this.torches[0], false);
+        }
+
+        for (const tjson of json.torches) {
+            this.addTorch(false).fromJson(tjson);
+        }
+
+        this.doTorchResizing(() => {
+            for (const t of this.torches) {
+                t.element.style.setProperty("display", 'inline-block');
+            }
+        });
+    }
+
+    /**
+     * @param {{}|undefined} json
+     */
+
+    async maybeAdvanceTimeFromSave(json) {
+        if (!json || json.version !== 1) {
+            return;
+        }
+
+        let torchesLit = false;
+
+        for (const t of this.torches) {
+            if (t.ignited) {
+                torchesLit = true;
+                break;
+            }
+        }
+
+        if (!torchesLit) {
+            return;
+        }
+
+        const oldTime = new Date(json.timeMark);
+        const newTime = new Date();
+
+        console.log(oldTime, newTime);
+    }
+
 }

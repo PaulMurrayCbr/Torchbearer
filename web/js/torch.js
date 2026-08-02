@@ -212,4 +212,26 @@ export class Torch {
         this.element.querySelector(".label").textContent = label;
     }
 
+    toJson() {
+        return {
+            version: 1,
+            ignited: this.ignited,
+            maxMinutes: this.maxMinutes,
+            minutesRemaining: this.minutesRemaining,
+            label: this.label,
+        }
+    }
+
+    fromJson(json) {
+        if(json.version !== 1) {
+            return;
+        }
+
+        this.ignited = json.ignited;
+        this.maxMinutes = json.maxMinutes;
+        this.minutesRemaining = json.minutesRemaining;
+        this.label = json.label;
+        this.update();
+    }
+
 }
